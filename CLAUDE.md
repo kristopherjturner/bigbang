@@ -2,14 +2,15 @@
 
 ## What this repo is
 
-PowerShell automation repo in the kristopherjturner organization. Scripts are PowerShell 7+ and follow the HCS scripting standard.
+Big Bang is a declarative, continuous delivery tool for deploying DoD hardened and approved packages into a Kubernetes cluster.
 
 ---
 
 ## ADO project details
 
 - **ADO org:** https://dev.azure.com/hybridcloudsolutions
-- **ADO project:** kristopherjturner
+- **ADO project:** Platform Engineering
+- **Area path:** Platform Engineering\Onboarding
 - **Work item format:** `AB#<id>` in commit messages and PR descriptions
 
 ---
@@ -28,7 +29,7 @@ This repo follows all HCS platform standards defined in the Platform Engineering
 | Claude Code | [docs/standards/claude-code.md](https://dev.azure.com/hybridcloudsolutions/Platform%20Engineering/_git/Platform%20Engineering?path=/docs/standards/claude-code.md) |
 
 Key rules:
-- All scripts: PowerShell 7+ only. `#Requires -Version 7.0`, `Set-StrictMode -Version Latest`, `\Stop = 'Stop'`.
+- All scripts: PowerShell 7+ only. `#Requires -Version 7.0`, `Set-StrictMode -Version Latest`, ` $ErrorActionPreference = 'Stop'`.
 - All docs: Markdown only. No Word documents in any repo.
 - Commit format: `type(scope): short description` — types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`
 - No secrets, tokens, or credentials committed to any file.
@@ -44,9 +45,90 @@ Key rules:
 | Azure login | kris@hybridsolutions.cloud |
 | Key Vault | kv-hcs-vault-01 |
 
-Load environment before starting a session:
+### Environment variables expected
+
+| Variable | Source | Purpose |
+|---|---|---|
+| `GITHUB_TOKEN` | kv-hcs-vault-01 via Load-HCSEnvironment.ps1 | GitHub CLI and git operations |
+| `AZURE_DEVOPS_EXT_PAT` | kv-hcs-vault-01 via Load-HCSEnvironment.ps1 | ADO CLI (`az boards`, `az devops`) |
+| `AZURE_SUBSCRIPTION_ID` | kv-hcs-vault-01 via Load-HCSEnvironment.ps1 | Azure CLI subscription context |
+Load before starting a session:
 ```powershell
 . E:\git\platform\scripts\Load-HCSEnvironment.ps1
+```
+
+### Build and test commands
+
+```
+# Run scripts from the scripts/ directory
+pwsh -NoProfile -File scripts/<ScriptName>.ps1
+
+# Pester tests (if present)
+Invoke-Pester -Output Detailed
+```
+
+---
+
+## Repo structure
+
+```
+bigbang/
+├── .claude/
+    └── settings.json
+├── .gitlab/
+    ├── issue_templates/
+    ├── merge_request_templates/
+    └── base_config.md.gotmpl
+├── .vscode/
+    └── settings.json
+├── base/
+    ├── flux/
+    ├── bigbang-dev-cert.yaml
+    ├── configmap.yaml
+    ├── gitrepository.yaml
+    └── helmrelease.yaml
+├── chart/
+    ├── dashboards/
+    ├── templates/
+    ├── Chart.yaml
+    ├── ingress-certs.yaml
+    └── values.yaml
+├── dev/
+    ├── bigbang.yaml
+    ├── configmap.yaml
+    └── kustomization.yaml
+├── docs/
+    ├── assets/
+    ├── developer/
+    ├── guides/
+    ├── prerequisites/
+    └── understanding-bigbang/
+├── prod/
+    ├── bigbang.yaml
+    ├── configmap.yaml
+    └── kustomization.yaml
+├── scripts/
+    ├── install_flux.sh
+    ├── remove-ns-finalizer.sh
+    └── sync.sh
+├── terraform/
+    ├── modules/
+    ├── options/
+    ├── storageclass/
+    ├── us-gov-west-1/
+    └── README.md
+├── tests/
+    ├── images.txt
+    ├── rke2-test-values.yaml
+    └── test-values.yaml
+├── .gitignore
+├── .gitlab-ci.yml
+├── .sops.yaml
+├── CHANGELOG.md
+├── CLAUDE.md
+├── CODEOWNERS
+├── CONTRIBUTING.md
+└── ...
 ```
 
 ---
@@ -60,14 +142,23 @@ Load environment before starting a session:
 - `gh issue`, `gh pr`, `gh run` CLI commands
 - `az` CLI read operations: `az ... show`, `az ... list`
 - PowerShell scripts in `scripts/` already committed
+- `Invoke-Pester` for running tests
 
 **Always confirm before:**
-- Any operation that modifies Azure resources
-- Installing or upgrading dependencies
+- Creating or deleting Azure resources
+- Any `az` CLI write operation that modifies Azure state
 - Running destructive operations
 - Making API calls to external services
 - Any `az` CLI write operation
-- Scripts that modify Key Vault secrets
+- Scripts that modify Key Vault secrets or Azure resources
+
+---
+
+## Subagents available in this repo
+
+- `bigbang-engineer` (model: sonnet) — Expert in `bigbang`: deep knowledge of this repo's structure, conventions, and development workflow.
+
+User-level agents (available in every repo session): `triage-lookup`, `markdown-prose-editor`, `azurelocal-domain-expert`, `mkdocs-material-doctor`, `turner-module-scaffold-engineer`, `mms-2026-demo-presenter`.
 
 ---
 
